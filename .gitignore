@@ -1,0 +1,10 @@
+.env 
+venv/ 
+__pycache__/ 
+.pytest_cache/ 
+*.pyc 
+cache/ 
+broadcast/ 
+node_modules/ 
+lib/ 
+out/   # se for usado Foundry

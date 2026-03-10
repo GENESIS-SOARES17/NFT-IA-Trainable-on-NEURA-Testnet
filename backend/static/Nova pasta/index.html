@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agente NFT com IA</title>
+    <style>
+        /* ----- Estilos base (tema claro é o padrão) ----- */
+        body {
+            background-image: url('/public/marca.png');
+            background-repeat: repeat;
+            background-size: auto;
+            position: relative;
+            min-height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        /* Overlay para suavizar a marca d'água */
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.85);
+            pointer-events: none;
+            z-index: 0;
+            transition: background-color 0.3s;
+        }
+
+        /* Tema escuro */
+        body.tema-escuro {
+            color: #f0f0f0;
+        }
+        body.tema-escuro::before {
+            background-color: rgba(0, 0, 0, 0.7);
+        }
+        body.tema-escuro .container {
+            background-color: rgba(30, 30, 30, 0.9);
+            color: #f0f0f0;
+        }
+        body.tema-escuro .info {
+            background-color: rgba(50, 50, 50, 0.9);
+        }
+        body.tema-escuro input,
+        body.tema-escuro textarea {
+            background-color: #444;
+            color: #f0f0f0;
+            border-color: #666;
+        }
+        body.tema-escuro label {
+            color: #ddd;
+        }
+        body.tema-escuro .result {
+            background-color: rgba(50, 50, 50, 0.9);
+            border-left-color: #3498db;
+        }
+
+        /* Tema verde claro */
+        body.tema-verde {
+            color: #1e3a1e;
+        }
+        body.tema-verde::before {
+            background-color: rgba(200, 240, 200, 0.8);
+        }
+        body.tema-verde .container {
+            background-color: rgba(220, 255, 220, 0.9);
+        }
+        body.tema-verde .info {
+            background-color: rgba(180, 230, 180, 0.9);
+        }
+        body.tema-verde input,
+        body.tema-verde textarea {
+            background-color: #f0fff0;
+            border-color: #8bc34a;
+        }
+        body.tema-verde label {
+            color: #1e5a1e;
+        }
+        body.tema-verde .result {
+            background-color: rgba(220, 255, 220, 0.9);
+            border-left-color: #4caf50;
+        }
+
+        /* Todo o conteúdo deve ficar acima do overlay */
+        .logo-container, h1, .container, .tema-selector {
+            position: relative;
+            z-index: 1;
+        }
+
+        h1 {
+            text-align: center;
+            color: inherit;
+            margin-top: 10px;
+        }
+
+        .logo-container {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .logo-container img {
+            max-width: 200px;
+            height: auto;
+        }
+
+        /* Seletor de temas */
+        .tema-selector {
+            text-align: center;
+            margin: 10px 0;
+        }
+        .tema-btn {
+            border: none;
+            padding: 8px 16px;
+            margin: 0 5px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: transform 0.2s, opacity 0.2s;
+        }
+        .tema-btn:hover {
+            transform: scale(1.05);
+        }
+        .tema-btn.claro {
+            background-color: #f0f0f0;
+            color: #333;
+            border: 1px solid #ccc;
+        }
+        .tema-btn.escuro {
+            background-color: #333;
+            color: #f0f0f0;
+            border: 1px solid #666;
+        }
+        .tema-btn.verde {
+            background-color: #a5d6a5;
+            color: #1e5a1e;
+            border: 1px solid #6b8e4c;
+        }
+
+        .container {
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            max-width: 800px;
+            margin: 20px auto;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            transition: color 0.3s;
+        }
+
+        /* Grupo do campo de endereço com botão ao lado */
+        .endereco-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .endereco-group input {
+            flex: 1;
+        }
+        .btn-conectar {
+            background-color: #f6851b;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            white-space: nowrap;
+            transition: background-color 0.3s;
+        }
+        .btn-conectar:hover {
+            background-color: #e2761b;
+        }
+        .btn-conectar:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+            box-sizing: border-box;
+            transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #2980b9;
+        }
+
+        .result {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: rgba(249, 249, 249, 0.9);
+            border-left: 4px solid #3498db;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            transition: background-color 0.3s, border-left-color 0.3s;
+        }
+
+        .result strong {
+            color: inherit;
+        }
+
+        .error {
+            color: #e74c3c;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+
+        .loading {
+            text-align: center;
+            margin: 20px 0;
+            font-style: italic;
+            color: #7f8c8d;
+        }
+
+        .info {
+            background-color: rgba(232, 244, 253, 0.9);
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            transition: background-color 0.3s;
+        }
+
+        code {
+            background-color: #eee;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+        body.tema-escuro code {
+            background-color: #555;
+            color: #eee;
+        }
+        body.tema-verde code {
+            background-color: #c8e6c9;
+        }
+    </style>
+</head>
+<body class="tema-claro">
+    <!-- LOGO -->
+    <div class="logo-container">
+        <img src="/public/logo.png" alt="Logo do Projeto">
+    </div>
+    <h1>🤖 Agente NFT com IA</h1>
+
+    <!-- SELETOR DE TEMAS -->
+    <div class="tema-selector">
+        <button class="tema-btn claro" onclick="mudarTema('claro')">☀️ Claro</button>
+        <button class="tema-btn escuro" onclick="mudarTema('escuro')">🌙 Escuro</button>
+        <button class="tema-btn verde" onclick="mudarTema('verde')">🍃 Verde</button>
+    </div>
+
+    <div class="container">
+        <div class="info">
+            <strong>🔍 Informações do agente padrão:</strong><br>
+            Token ID: <code>1</code><br>
+            Dono: <code>0xd139fBC8F34496db7A142b358Cb791988E8bE68e</code><br>
+            Nome: <code>Jardineiro Virtual</code>
+        </div>
+
+        <div class="form-group">
+            <label for="tokenId">Token ID:</label>
+            <input type="number" id="tokenId" value="1" min="1" step="1">
+        </div>
+
+        <div class="form-group">
+            <label for="usuario">Endereço da carteira:</label>
+            <div class="endereco-group">
+                <input type="text" id="usuario" placeholder="0x..." value="0xd139fBC8F34496db7A142b358Cb791988E8bE68e">
+                <button class="btn-conectar" onclick="conectarCarteira()" id="btnConectar">🔌 Conectar Carteira</button>
+            </div>
+            <small style="color: #666;">Use sua própria carteira para interagir (se tiver permissão).</small>
+        </div>
+
+        <div class="form-group">
+            <label for="pergunta">Pergunta para o agente:</label>
+            <textarea id="pergunta" placeholder="Digite sua pergunta aqui...">Como plantar alface?</textarea>
+        </div>
+
+        <button onclick="perguntar()">Enviar Pergunta</button>
+
+        <div id="loading" class="loading" style="display:none;">⏳ Processando...</div>
+        <div id="result" class="result" style="display:none;"></div>
+        <div id="error" class="error"></div>
+    </div>
+
+    <script>
+        function mudarTema(tema) {
+            document.body.classList.remove('tema-claro', 'tema-escuro', 'tema-verde');
+            document.body.classList.add(`tema-${tema}`);
+        }
+
+        async function conectarCarteira() {
+            const btn = document.getElementById('btnConectar');
+            const originalText = btn.innerText;
+            btn.innerText = '⏳ Conectando...';
+            btn.disabled = true;
+
+            try {
+                if (typeof window.ethereum === 'undefined') {
+                    throw new Error('MetaMask não encontrada. Instale a extensão ou use um navegador compatível.');
+                }
+
+                const contas = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                if (contas.length === 0) {
+                    throw new Error('Nenhuma conta autorizada.');
+                }
+
+                document.getElementById('usuario').value = contas[0];
+            } catch (error) {
+                document.getElementById('error').innerText = `❌ Erro ao conectar: ${error.message}`;
+            } finally {
+                btn.innerText = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        async function perguntar() {
+            const tokenId = document.getElementById('tokenId').value;
+            const usuario = document.getElementById('usuario').value.trim();
+            const pergunta = document.getElementById('pergunta').value.trim();
+
+            if (!usuario || !pergunta) {
+                alert('Por favor, preencha o endereço e a pergunta.');
+                return;
+            }
+
+            const url = `/api/agente/${tokenId}/perguntar`;
+
+            const payload = {
+                usuario: usuario,
+                pergunta: pergunta
+            };
+
+            document.getElementById('result').style.display = 'none';
+            document.getElementById('error').innerText = '';
+            document.getElementById('loading').style.display = 'block';
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    let errorMsg = `Erro ${response.status}: ${response.statusText}`;
+                    try {
+                        const errorData = await response.json();
+                        if (errorData.erro) errorMsg = errorData.erro;
+                    } catch (e) {}
+                    throw new Error(errorMsg);
+                }
+
+                const data = await response.json();
+
+                document.getElementById('result').innerHTML = `
+                    <strong>Agente:</strong> ${data.agente} (nível ${data.nivel})<br><br>
+                    <strong>Resposta:</strong> ${data.resposta}
+                `;
+                document.getElementById('result').style.display = 'block';
+            } catch (error) {
+                document.getElementById('error').innerText = `❌ ${error.message}`;
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
+        document.getElementById('pergunta').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                perguntar();
+            }
+        });
+    </script>
+</body>
+</html>
